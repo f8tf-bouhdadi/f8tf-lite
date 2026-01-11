@@ -1,2 +1,33 @@
-# f8tf-lite
-F8TF Lite — preuves simples (public) | Plateforme = Fonctions (RM-ODP)
+# F8TF Lite
+
+**F8TF = Plateforme = Fonctions (RM-ODP).**  
+Ce dépôt est une **version Lite (publique)** : preuves simples, exemples minimaux, et démonstrations.
+
+## Objectif
+Montrer que les stacks modernes (.NET / Spring / Django) réalisent **les mêmes fonctions de plateforme** :
+routage, parsing, validation, sécurité, transactions, résilience, observabilité, etc.
+
+## Contenu (en cours)
+- `web/` : pipeline Web minimal (préfigure WebAPI/MVC)
+- `data/` : pipeline Data minimal (préfigure ADO/ORM)
+- `docs/` : notes et schémas simplifiés (teasers)
+
+## Méthode
+Une fonction = un **cahier de charge court** + une **preuve** (démo + tests).  
+Principe : **Guard → Gate** (contraintes → tests/CI).
+
+## Version Pro
+La version **Pro** (packs complets) inclut : cahiers de charge détaillés, 4 diagrammes complets, checklists, et gates CI/CD.
+📩 Contact : m.bouhdadi@um5r.ac.ma  
+LinkedIn : https://www.linkedin.com/in/mohamed-bouhdadi-4a784125b/
+
+---
+
+# F8TF Lite (English)
+
+**F8TF = Platform = Functions (RM-ODP).**  
+This repository is the **public Lite** version: minimal proofs and runnable examples.
+
+**Pro version** (full packs) available on request: full specs, complete diagrams, checklists, CI/CD gates.  
+Contact: m.bouhdadi@um5r.ac.ma
+
