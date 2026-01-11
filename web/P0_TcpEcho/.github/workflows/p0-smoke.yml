@@ -1,0 +1,84 @@
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+
+static class P0
+{
+    // ---- Configuration ----
+    private const string Host = "127.0.0.1";
+    private const int Port = 5001;
+
+    public static async Task<int> Main(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            PrintUsage();
+            return 2;
+        }
+
+        var mode = args[0].Trim().ToLowerInvariant();
+
+        using var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+        try
+        {
+            return mode switch
+            {
+                "server" => await RunServerAsync(cts.Token),
+                "client" => await RunClientAsync(args.Skip(1).ToArray(), cts.Token),
+                _ => UsageAndReturn()
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Annulé (Ctrl+C).");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur: {ex.GetType().Name}: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static int UsageAndReturn()
+    {
+        PrintUsage();
+        return 2;
+    }
+
+    private static void PrintUsage()
+    {
+        Console.WriteLine("Usage:");
+        Console.WriteLine("  dotnet run -- server");
+        Console.WriteLine("  dotnet run -- client \"bonjour\"");
+    }
+
+    // =========================
+    // ========== SERVER =======
+    // =========================
+    private static async Task<int> RunServerAsync(CancellationToken ct)
+    {
+        var listener = new TcpListener(IPAddress.Parse(Host), Port);
+
+        // Start() : demande à l'OS d'ouvrir un socket TCP en écoute sur (Host, Port)
+        listener.Start();
+        Console.WriteLine($"[SERVER] Listening on {Host}:{Port} (Ctrl+C pour arrêter)");
+
+        while (!ct.IsCancellationRequested)
+        {
+            // AcceptTcpClientAsync : attend une connexion entrante (bloquant en async)
+            var client = await listener.AcceptTcpClientAsync(ct);
+
+            // On traite chaque client en tâche séparée (pour accepter plusieurs clients)
+            _ = Task.Run(() => HandleClientAsync(client, ct), ct);
+        }
+
+        listener.Stop();
+        return 0;
+    }
+
+    private static async Task HandleClientAsync(TcpClient client, CancellationToken ct)
+    {
+        await using var _ = client.ConfigureAwait(false);
