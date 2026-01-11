@@ -12,3 +12,9 @@ Objectif : exécuter un client + serveur TCP et voir :
 ```bash
 cd web/P0_TcpEcho
 dotnet run -- server
+## For users
+You need .NET SDK 8+ to run from source:
+- dotnet run -- server
+- dotnet run -- client "bonjour"
+
+(Coming soon) Releases: prebuilt binaries for Windows/Linux.
