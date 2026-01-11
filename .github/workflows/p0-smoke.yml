@@ -1,0 +1,32 @@
+name: P0 TCP Smoke Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  p0:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build
+        run: dotnet build web/P0_TcpEcho/P0_TcpEcho.csproj -c Release
+
+      - name: Run server + client (smoke)
+        shell: bash
+        run: |
+          set -e
+          dotnet run --project web/P0_TcpEcho/P0_TcpEcho.csproj -- server &
+          SERVER_PID=$!
+          sleep 1
+          OUTPUT=$(dotnet run --project web/P0_TcpEcho/P0_TcpEcho.csproj -- client "bonjour")
+          echo "$OUTPUT"
+          kill $SERVER_PID || true
+          echo "$OUTPUT" | grep -q "echo:"
