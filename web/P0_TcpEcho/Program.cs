@@ -81,7 +81,7 @@ static class P0
 
     private static async Task HandleClientAsync(TcpClient client, CancellationToken ct)
     {
-        await using var _ = client.ConfigureAwait(false);
+        using var _ = client;
         var remote = client.Client.RemoteEndPoint?.ToString() ?? "?";
         Console.WriteLine($"[SERVER] Client connected: {remote}");
 
