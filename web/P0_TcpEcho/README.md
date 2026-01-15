@@ -1,3 +1,6 @@
+[![COM0 TCP Smoke Test](https://github.com/f8tf-bouhdadi/f8tf-lite/actions/workflows/p0-smoke.yml/badge.svg?branch=main)](https://github.com/f8tf-bouhdadi/f8tf-lite/actions/workflows/p0-smoke.yml)
+
+
 # P0 — TCP Echo (bytes → message)
 
 Objectif : exécuter un client + serveur TCP et voir :
