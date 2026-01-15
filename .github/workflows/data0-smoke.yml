@@ -1,0 +1,31 @@
+name: DATA0 Smoke Test
+on:
+  push:
+  pull_request:
+
+jobs:
+  data0:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build
+        run: dotnet build data/DATA0_RawStore/DATA0_RawStore.csproj -c Release
+
+      - name: Run server + client (smoke)
+        shell: bash
+        run: |
+          set -e
+          dotnet run --project data/DATA0_RawStore/DATA0_RawStore.csproj -- server --url http://localhost:5080 &
+          SERVER_PID=$!
+          sleep 1
+          OUTPUT=$(dotnet run --project data/DATA0_RawStore/DATA0_RawStore.csproj -- client http://localhost:5080 COM1 bonjour)
+          echo "$OUTPUT"
+          kill $SERVER_PID || true
+          echo "$OUTPUT" | grep -q "SMOKE: ok"
