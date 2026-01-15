@@ -1,4 +1,4 @@
-name: P0 TCP Smoke Test
+name: COM0 TCP Smoke Test
 
 on:
   push:
