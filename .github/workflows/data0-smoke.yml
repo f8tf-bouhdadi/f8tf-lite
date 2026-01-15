@@ -1,28 +1,77 @@
-      - name: Run server + client (smoke)
+name: DATA0 Smoke Test
+on:
+  push:
+  pull_request:
+
+jobs:
+  data0:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show tree (debug)
+        shell: bash
+        run: |
+          set -e
+          pwd
+          ls -la
+          echo "---- data/ ----"
+          ls -la data || true
+          echo "---- data/DATA0_RawStore/ ----"
+          ls -la data/DATA0_RawStore || true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: dotnet --info (debug)
+        run: dotnet --info
+
+      - name: Restore (verbose)
+        run: dotnet restore data/DATA0_RawStore/DATA0_RawStore.csproj -v minimal
+
+      - name: Build (verbose)
+        run: dotnet build data/DATA0_RawStore/DATA0_RawStore.csproj -c Release -v minimal
+
+      - name: Run server + client (smoke, robust)
         shell: bash
         run: |
           set -euo pipefail
 
-          # Démarre le serveur (logs dans server.log)
+          # Start server and capture logs
           dotnet run --project data/DATA0_RawStore/DATA0_RawStore.csproj -- server --url http://127.0.0.1:5080 > server.log 2>&1 &
           SERVER_PID=$!
-          trap "kill $SERVER_PID || true" EXIT
+          echo "Server PID=$SERVER_PID"
 
-          # Attendre que /health réponde (max 20s)
-          for i in {1..20}; do
+          # Wait for /health (max 30s)
+          for i in {1..30}; do
             if curl -fsS http://127.0.0.1:5080/health > /dev/null; then
-              echo "Server is up"
+              echo "Server is up (health OK)"
               break
             fi
             sleep 1
           done
 
-          # Vérifier que le serveur est bien up
-          curl -fsS http://127.0.0.1:5080/health > /dev/null
+          # If still not up, print logs and fail
+          if ! curl -fsS http://127.0.0.1:5080/health > /dev/null; then
+            echo "Server did not start. server.log:"
+            cat server.log || true
+            kill $SERVER_PID || true
+            exit 1
+          fi
 
-          # Lancer le client
-          OUTPUT=$(dotnet run --project data/DATA0_RawStore/DATA0_RawStore.csproj -- client http://127.0.0.1:5080 COM1 bonjour) || (cat server.log; exit 1)
+          # Run client
+          OUTPUT=$(dotnet run --project data/DATA0_RawStore/DATA0_RawStore.csproj -- client http://127.0.0.1:5080 COM1 bonjour) || true
           echo "$OUTPUT"
 
-          # Condition smoke
-          echo "$OUTPUT" | grep -q "SMOKE: ok"
+          # Stop server
+          kill $SERVER_PID || true
+
+          # If smoke failed, show server log then fail
+          if ! echo "$OUTPUT" | grep -q "SMOKE: ok"; then
+            echo "SMOKE failed. server.log:"
+            cat server.log || true
+            exit 1
+          fi
