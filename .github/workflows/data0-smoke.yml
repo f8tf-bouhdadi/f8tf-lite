@@ -1,66 +1,22 @@
-$ErrorActionPreference = "Stop"
+cat > .github/workflows/data0-smoke.yml <<'EOF'
+name: DATA0 Smoke Test
+on:
+  push:
+  pull_request:
 
-$proj = "modules/DATA/DATA0_RawStore/adapters/dotnet/src/DATA0_RawStore/DATA0_Store.csproj"
-$baseUrl = "http://127.0.0.1:5080"
+jobs:
+  data0:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
 
-Write-Host "Build: $proj"
-dotnet build -c Release $proj
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
 
-# Force URL and ignore launch profile
-$env:ASPNETCORE_URLS = $baseUrl
-$env:ASPNETCORE_ENVIRONMENT = "Production"
-
-Write-Host "Start server on $baseUrl"
-
-$job = Start-Job -ScriptBlock {
-  param($p, $u)
-  $env:ASPNETCORE_URLS = $u
-  $env:ASPNETCORE_ENVIRONMENT = "Production"
-  dotnet run -c Release --no-build --no-launch-profile --project $p
-} -ArgumentList $proj, $baseUrl
-
-try {
-  # Wait /health
-  $ok = $false
-  for ($i = 0; $i -lt 30; $i++) {
-    try {
-      $h = Invoke-RestMethod -Method Get -Uri "$baseUrl/health" -TimeoutSec 2
-      if ($h.ok -eq $true) { $ok = $true; break }
-    } catch {
-      Start-Sleep -Seconds 1
-    }
-  }
-  if (-not $ok) {
-    Write-Host "Server did not become healthy. Job output:"
-    Receive-Job $job -Keep | Select-Object -Last 80 | ForEach-Object { $_ }
-    throw "Server not healthy after 30s"
-  }
-
-  # Append #1 => offset 0
-  $body1 = @{ payload = "bonjour" } | ConvertTo-Json -Compress
-  $r0 = Invoke-RestMethod -Method Post -Uri "$baseUrl/append" -ContentType "application/json" -Body $body1
-  if ($r0.offset -ne 0) { throw "Expected offset 0, got $($r0.offset)" }
-
-  # Append #2 => offset 1
-  $body2 = @{ payload = "x" } | ConvertTo-Json -Compress
-  $r1 = Invoke-RestMethod -Method Post -Uri "$baseUrl/append" -ContentType "application/json" -Body $body2
-  if ($r1.offset -ne 1) { throw "Expected offset 1, got $($r1.offset)" }
-
-  # Missing payload => HTTP 400
-  $badOk = $false
-  try {
-    Invoke-RestMethod -Method Post -Uri "$baseUrl/append" -ContentType "application/json" -Body "{}" | Out-Null
-  } catch {
-    if ($_.Exception.Message -match "400") { $badOk = $true }
-  }
-  if (-not $badOk) { throw "Expected HTTP 400 for missing payload" }
-
-  Write-Host "SMOKE: ok"
-  exit 0
-}
-finally {
-  if ($job) {
-    Stop-Job $job -ErrorAction SilentlyContinue | Out-Null
-    Remove-Job $job -Force -ErrorAction SilentlyContinue | Out-Null
-  }
-}
+      - name: Smoke (PowerShell)
+        shell: pwsh
+        run: |
+          ./modules/DATA/DATA0_RawStore/scripts/smoke.ps1
+EOF
