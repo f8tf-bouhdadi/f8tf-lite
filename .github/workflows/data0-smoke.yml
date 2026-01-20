@@ -1,77 +1,66 @@
-name: DATA0 Smoke Test
-on:
-  push:
-  pull_request:
+$ErrorActionPreference = "Stop"
 
-jobs:
-  data0:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+$proj = "modules/DATA/DATA0_RawStore/adapters/dotnet/src/DATA0_RawStore/DATA0_Store.csproj"
+$baseUrl = "http://127.0.0.1:5080"
 
-      - name: Show tree (debug)
-        shell: bash
-        run: |
-          set -e
-          pwd
-          ls -la
-          echo "---- data/ ----"
-          ls -la data || true
-          echo "---- data/DATA0_RawStore/ ----"
-          ls -la data/DATA0_RawStore || true
+Write-Host "Build: $proj"
+dotnet build -c Release $proj
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
+# Force URL and ignore launch profile
+$env:ASPNETCORE_URLS = $baseUrl
+$env:ASPNETCORE_ENVIRONMENT = "Production"
 
-      - name: dotnet --info (debug)
-        run: dotnet --info
+Write-Host "Start server on $baseUrl"
 
-      - name: Restore (verbose)
-        run: dotnet restore data/DATA0_RawStore/DATA0_RawStore.csproj -v minimal
+$job = Start-Job -ScriptBlock {
+  param($p, $u)
+  $env:ASPNETCORE_URLS = $u
+  $env:ASPNETCORE_ENVIRONMENT = "Production"
+  dotnet run -c Release --no-build --no-launch-profile --project $p
+} -ArgumentList $proj, $baseUrl
 
-      - name: Build (verbose)
-        run: dotnet build data/DATA0_RawStore/DATA0_RawStore.csproj -c Release -v minimal
+try {
+  # Wait /health
+  $ok = $false
+  for ($i = 0; $i -lt 30; $i++) {
+    try {
+      $h = Invoke-RestMethod -Method Get -Uri "$baseUrl/health" -TimeoutSec 2
+      if ($h.ok -eq $true) { $ok = $true; break }
+    } catch {
+      Start-Sleep -Seconds 1
+    }
+  }
+  if (-not $ok) {
+    Write-Host "Server did not become healthy. Job output:"
+    Receive-Job $job -Keep | Select-Object -Last 80 | ForEach-Object { $_ }
+    throw "Server not healthy after 30s"
+  }
 
-      - name: Run server + client (smoke, robust)
-        shell: bash
-        run: |
-          set -euo pipefail
+  # Append #1 => offset 0
+  $body1 = @{ payload = "bonjour" } | ConvertTo-Json -Compress
+  $r0 = Invoke-RestMethod -Method Post -Uri "$baseUrl/append" -ContentType "application/json" -Body $body1
+  if ($r0.offset -ne 0) { throw "Expected offset 0, got $($r0.offset)" }
 
-          # Start server and capture logs
-          dotnet run --project data/DATA0_RawStore/DATA0_RawStore.csproj -- server --url http://127.0.0.1:5080 > server.log 2>&1 &
-          SERVER_PID=$!
-          echo "Server PID=$SERVER_PID"
+  # Append #2 => offset 1
+  $body2 = @{ payload = "x" } | ConvertTo-Json -Compress
+  $r1 = Invoke-RestMethod -Method Post -Uri "$baseUrl/append" -ContentType "application/json" -Body $body2
+  if ($r1.offset -ne 1) { throw "Expected offset 1, got $($r1.offset)" }
 
-          # Wait for /health (max 30s)
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:5080/health > /dev/null; then
-              echo "Server is up (health OK)"
-              break
-            fi
-            sleep 1
-          done
+  # Missing payload => HTTP 400
+  $badOk = $false
+  try {
+    Invoke-RestMethod -Method Post -Uri "$baseUrl/append" -ContentType "application/json" -Body "{}" | Out-Null
+  } catch {
+    if ($_.Exception.Message -match "400") { $badOk = $true }
+  }
+  if (-not $badOk) { throw "Expected HTTP 400 for missing payload" }
 
-          # If still not up, print logs and fail
-          if ! curl -fsS http://127.0.0.1:5080/health > /dev/null; then
-            echo "Server did not start. server.log:"
-            cat server.log || true
-            kill $SERVER_PID || true
-            exit 1
-          fi
-
-          # Run client
-          OUTPUT=$(dotnet run --project data/DATA0_RawStore/DATA0_RawStore.csproj -- client http://127.0.0.1:5080 COM1 bonjour) || true
-          echo "$OUTPUT"
-
-          # Stop server
-          kill $SERVER_PID || true
-
-          # If smoke failed, show server log then fail
-          if ! echo "$OUTPUT" | grep -q "SMOKE: ok"; then
-            echo "SMOKE failed. server.log:"
-            cat server.log || true
-            exit 1
-          fi
+  Write-Host "SMOKE: ok"
+  exit 0
+}
+finally {
+  if ($job) {
+    Stop-Job $job -ErrorAction SilentlyContinue | Out-Null
+    Remove-Job $job -Force -ErrorAction SilentlyContinue | Out-Null
+  }
+}
