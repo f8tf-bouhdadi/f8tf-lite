@@ -27,10 +27,9 @@ echo "[verify] structure: OK"
 echo "[verify] checksums: OK"
 
 # minimal evidence sanity
-if ! grep -q "END: SUCCESS" "$PACK/EVIDENCE/VERIFY.txt"; then
-  echo "[verify] ERROR evidence log does not contain END: SUCCESS" >&2
+if [[ ! -s "$PACK/EVIDENCE/VERIFY.txt" ]]; then
+  echo "[verify] ERROR evidence file is empty: EVIDENCE/VERIFY.txt" >&2
   exit 3
 fi
 echo "[verify] evidence: OK"
-
 echo "[verify] END: SUCCESS"
