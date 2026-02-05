@@ -1,0 +1,13 @@
+{
+  "product": "F8TF",
+  "delivery_level": "AUDIT_V1",
+  "scope": ["PROOF_PACK_EXAMPLE (sanitized)"],
+  "required_files": [
+    "README_CLIENT.md",
+    "MANIFEST.json",
+    "SHA256SUMS",
+    "EVIDENCE/verify.log",
+    "SAMPLES/sample.ok.txt"
+  ],
+  "notes": "Public sanitized example: structure + checks only."
+}

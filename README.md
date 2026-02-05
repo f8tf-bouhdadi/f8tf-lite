@@ -31,3 +31,10 @@ This repository is the **public Lite** version: minimal proofs and runnable exam
 **Pro version** (full packs) available on request: full specs, complete diagrams, checklists, CI/CD gates.  
 Contact: m.bouhdadi@um5r.ac.ma
 
+
+## Commercial / Delivery Proof
+- Offers: docs/OFFERS.md
+- Delivery protocol: docs/DELIVERY_PROTOCOL.md
+- Proof pack example: docs/PROOF_PACK_EXAMPLE/
+- Verify script (Git Bash): tools/VERIFY_CLIENT.sh
+- Verify script (PowerShell): tools/VERIFY_CLIENT.ps1
