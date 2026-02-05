@@ -1,0 +1,3 @@
+F8TF Lite — PROOF_PACK_EXAMPLE
+Static example evidence shipped with the repository.
+Verification scripts validate: structure + manifest + checksums.

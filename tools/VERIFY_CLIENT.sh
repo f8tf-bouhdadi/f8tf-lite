@@ -14,7 +14,7 @@ need() {
 need "README_CLIENT.md"
 need "MANIFEST.json"
 need "SHA256SUMS"
-need "EVIDENCE/verify.log"
+need "EVIDENCE/VERIFY.txt"
 need "SAMPLES/sample.ok.txt"
 
 echo "[verify] structure: OK"
@@ -27,7 +27,7 @@ echo "[verify] structure: OK"
 echo "[verify] checksums: OK"
 
 # minimal evidence sanity
-if ! grep -q "END: SUCCESS" "$PACK/EVIDENCE/verify.log"; then
+if ! grep -q "END: SUCCESS" "$PACK/EVIDENCE/VERIFY.txt"; then
   echo "[verify] ERROR evidence log does not contain END: SUCCESS" >&2
   exit 3
 fi
