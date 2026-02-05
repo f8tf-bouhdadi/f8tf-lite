@@ -166,3 +166,9 @@ Final note
 
 This repository is intentionally minimal, explicit, and reproducible.
 Everything present can be verified independently.
+
+
+## Run a demo (DATA0_RawStore)
+
+```bash
+bash modules/DATA/DATA0_RawStore/scripts/smoke_v0.sh
