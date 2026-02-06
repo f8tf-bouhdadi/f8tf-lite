@@ -7,7 +7,7 @@ It provides verifiable delivery artefacts and minimal runnable demonstrations in
 
 No proprietary material, no confidential specifications, no commercial commitments.
 
-Purpose
+## Purpose
 
 The goal of F8TF Lite is to demonstrate that modern application stacks
 (.NET, Java/Spring, Python/Django, etc.) implement the same platform functions, such as:
@@ -172,3 +172,12 @@ Everything present can be verified independently.
 
 ```bash
 bash modules/DATA/DATA0_RawStore/scripts/smoke_v0.sh
+```
+
+## Commercial / Delivery (Public)
+- Offers: docs/OFFERS.md
+- Delivery protocol: docs/DELIVERY_PROTOCOL.md
+- Proof pack example: docs/PROOF_PACK_EXAMPLE/
+- Client verification: tools/VERIFY_CLIENT.sh and tools/VERIFY_CLIENT.ps1
+- Identity contract (DATA7): docs/IDENTITY_CONTRACT/
+- Trust/Evidence model (DATA8): docs/TRUST/
